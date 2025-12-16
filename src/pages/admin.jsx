@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Users, FileText, BarChart3, Settings, Eye, Check, X, Trash2, UserPlus, Shield, Database } from 'lucide-react';
+import { Users, FileText, BarChart3, Settings, UserPlus, Database } from 'lucide-react';
 
 // @ts-ignore;
 import { AdminStatsCard } from '@/components/AdminStatsCard';
@@ -76,7 +76,7 @@ export default function Admin(props) {
   }, []);
   const fetchAdminData = async () => {
     try {
-      // 获取待审核文章
+      // 获取待审核文章 - 修复orderBy参数格式
       const postsResult = await $w.cloud.callDataSource({
         dataSourceName: 'post',
         methodName: 'wedaGetRecordsV2',
@@ -84,10 +84,7 @@ export default function Admin(props) {
           filter: {
             status: 'pending'
           },
-          orderBy: [{
-            field: 'publishAt',
-            order: 'desc'
-          }]
+          orderBy: 'publishAt desc' // 修复：使用字符串格式 "字段名 排序方向"
         }
       });
       if (postsResult && postsResult.records) {
@@ -98,12 +95,13 @@ export default function Admin(props) {
         setPendingPosts(pendingPosts);
       }
 
-      // 获取用户数据
+      // 获取用户数据 - 修复orderBy参数格式
       const usersResult = await $w.cloud.callDataSource({
         dataSourceName: 'user',
         methodName: 'wedaGetRecordsV2',
         params: {
-          pageSize: 50
+          pageSize: 50,
+          orderBy: 'createdAt desc' // 修复：使用字符串格式 "字段名 排序方向"
         }
       });
       if (usersResult && usersResult.records) {
@@ -328,6 +326,7 @@ export default function Admin(props) {
     icon: Settings
   }];
   return <div className="min-h-screen bg-gradient-to-br from-slate-900 to-blue-900 text-white">
+      {/* 头部 */}
       <AdminHeader onBackToHome={handleBackToHome} />
 
       {/* 主要内容 */}
@@ -391,7 +390,7 @@ export default function Admin(props) {
                     </CardContent>
                   </Card>)}
               </div> : pendingPosts.length > 0 ? <div className="space-y-4">
-                {pendingPosts.map(post => <PendingPostItem key={post._id} post={post} onApprove={() => handleApprovePost(post._id)} onReject={() => handleRejectPost(post._id)} onPreview={() => handlePreviewPost(post._id)} onDelete={() => handleDeletePost(post._id)} />)}
+                {pendingPosts.map(post => <PendingPostItem key={post._id} post={post} onPreview={handlePreviewPost} onApprove={handleApprovePost} onReject={handleRejectPost} onDelete={handleDeletePost} />)}
               </div> : <Card className="border-0 bg-slate-800/50 backdrop-blur-sm text-center py-12">
                 <CardContent>
                   <FileText className="w-16 h-16 text-slate-500 mx-auto mb-4" />
@@ -413,110 +412,97 @@ export default function Admin(props) {
             {isLoading ? <div className="space-y-4">
                 {[1, 2, 3].map(i => <Card key={i} className="border-0 bg-slate-800/50 backdrop-blur-sm animate-pulse">
                     <CardContent className="p-6">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-slate-600 rounded-full"></div>
-                        <div className="flex-1">
-                          <div className="h-4 bg-slate-600 rounded w-1/3 mb-2"></div>
-                          <div className="h-3 bg-slate-600 rounded w-1/2"></div>
-                        </div>
-                      </div>
+                      <div className="h-4 bg-slate-600 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-slate-600 rounded w-full mb-2"></div>
                     </CardContent>
                   </Card>)}
-              </div> : <div className="space-y-4">
+              </div> : allUsers.length > 0 ? <div className="space-y-4">
                 {allUsers.map(user => <Card key={user._id} className="border-0 bg-slate-800/50 backdrop-blur-sm">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                            <span className="text-white font-semibold">
-                              {user.username?.charAt(0) || 'U'}
-                            </span>
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                            {user.username?.charAt(0) || 'U'}
                           </div>
                           <div>
-                            <h3 className="font-semibold text-white">{user.username || '未知用户'}</h3>
-                            <p className="text-slate-400 text-sm">{user.email || '无邮箱'}</p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              {user.isPremium && <Badge variant="secondary" className="bg-yellow-500 text-white">
-                                  <Shield className="w-3 h-3 mr-1" />
-                                  会员
-                                </Badge>}
-                              <span className="text-xs text-slate-500">
-                                注册时间: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '未知'}
-                              </span>
-                            </div>
+                            <h3 className="text-lg font-semibold text-white">{user.username}</h3>
+                            <p className="text-slate-400 text-sm">{user.email || '未设置邮箱'}</p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          {!user.isPremium && <Button size="sm" onClick={() => handleUpgradeUser(user._id)} className="bg-yellow-600 hover:bg-yellow-700">
-                              <Shield className="w-3 h-3 mr-1" />
-                              升级会员
-                            </Button>}
-                          <Button size="sm" onClick={() => handleSetAdmin(user._id)} className="bg-purple-600 hover:bg-purple-700">
+                          {user.isPremium && <Badge variant="secondary" className="bg-yellow-500 text-white">
+                              高级会员
+                            </Badge>}
+                          <Button size="sm" onClick={() => handleUpgradeUser(user._id)} className="bg-green-600 hover:bg-green-700">
                             <UserPlus className="w-3 h-3 mr-1" />
+                            升级会员
+                          </Button>
+                          <Button size="sm" onClick={() => handleSetAdmin(user._id)} className="bg-purple-600 hover:bg-purple-700">
+                            <Settings className="w-3 h-3 mr-1" />
                             设为管理员
                           </Button>
                         </div>
                       </div>
                     </CardContent>
                   </Card>)}
-              </div>}
+              </div> : <Card className="border-0 bg-slate-800/50 backdrop-blur-sm text-center py-12">
+                <CardContent>
+                  <Users className="w-16 h-16 text-slate-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-slate-300 mb-2">暂无用户</h3>
+                  <p className="text-slate-500">还没有用户注册</p>
+                </CardContent>
+              </Card>}
           </div>}
 
         {/* 系统设置 */}
         {activeTab === 'settings' && <div className="space-y-6">
             <h2 className="text-2xl font-bold font-playfair">系统设置</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="border-0 bg-slate-800/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg">数据源管理</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+            <Card className="border-0 bg-slate-800/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">数据源配置</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-300">微搭数据源</span>
                     <Badge variant="secondary" className="bg-green-500 text-white">
-                      正常
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-300">MySQL数据库</span>
-                    <Badge variant="secondary" className="bg-green-500 text-white">
-                      正常
+                      已启用
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-300">云储存</span>
                     <Badge variant="secondary" className="bg-green-500 text-white">
-                      正常
+                      已启用
                     </Badge>
                   </div>
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    <Database className="w-4 h-4 mr-2" />
-                    数据同步
-                  </Button>
-                </CardContent>
-              </Card>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-300">云托管</span>
+                    <Badge variant="secondary" className="bg-green-500 text-white">
+                      运行中
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card className="border-0 bg-slate-800/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg">系统维护</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Button className="w-full bg-orange-600 hover:bg-orange-700">
-                    <Settings className="w-4 h-4 mr-2" />
-                    清理缓存
-                  </Button>
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700">
+            <Card className="border-0 bg-slate-800/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">数据管理</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button variant="outline" className="justify-start text-slate-300 border-slate-600">
                     <Database className="w-4 h-4 mr-2" />
                     数据备份
                   </Button>
-                  <Button className="w-full bg-red-600 hover:bg-red-700">
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    清理日志
+                  <Button variant="outline" className="justify-start text-slate-300 border-slate-600">
+                    <Database className="w-4 h-4 mr-2" />
+                    数据恢复
                   </Button>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>}
       </div>
     </div>;

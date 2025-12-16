@@ -69,16 +69,16 @@ export default function Profile(props) {
               _id: item.id,
               title: item.title,
               content: item.content,
-              image: item.image_url,
-              authorId: item.author_id,
-              authorName: item.author_name,
-              authorAvatar: item.author_avatar,
-              tags: item.tags ? item.tags.split(',') : [],
+              image: item.image,
+              authorId: item.authorId,
+              authorName: item.authorName,
+              authorAvatar: item.authorAvatar,
+              tags: item.tags ? typeof item.tags === 'string' ? item.tags.split(',') : item.tags : [],
               likes: item.likes || 0,
               comments: item.comments || 0,
               views: item.views || 0,
-              isPremium: item.is_premium || false,
-              publishAt: new Date(item.created_at).getTime(),
+              isPremium: item.isPremium || false,
+              publishAt: item.publishAt || item.createdAt || Date.now(),
               status: item.status
             }));
             setUserPosts(mysqlPosts);
@@ -86,6 +86,7 @@ export default function Profile(props) {
             throw new Error(postsResult.message);
           }
         } else {
+          // 修复orderBy参数格式
           postsResult = await $w.cloud.callDataSource({
             dataSourceName: 'post',
             methodName: 'wedaGetRecordsV2',
@@ -93,10 +94,7 @@ export default function Profile(props) {
               filter: {
                 authorId: $w.auth.currentUser.userId
               },
-              orderBy: [{
-                field: 'publishAt',
-                order: 'desc'
-              }]
+              orderBy: 'publishAt desc' // 修复：使用字符串格式 "字段名 排序方向"
             }
           });
           if (postsResult && postsResult.records) {
@@ -396,7 +394,7 @@ export default function Profile(props) {
               </div> : userPosts.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {userPosts.map(post => <Card key={post._id} className="hover:shadow-lg transition-all duration-300 border-0">
                     <CardContent className="p-0 overflow-hidden rounded-lg">
-                      <img src={post.image} alt={post.title} className="w-full h-48 object-cover" />
+                      <img src={post.image || 'https://picsum.photos/seed/' + post._id + '/400/300.jpg'} alt={post.title} className="w-full h-48 object-cover" />
                       <div className="p-4">
                         <CardTitle className="text-lg font-semibold text-slate-800 mb-2 line-clamp-2">
                           {post.title}
