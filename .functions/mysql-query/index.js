@@ -10,14 +10,19 @@ exports.main = async (event, context) => {
   } = event;
   
   try {
-    // MySQL连接配置（需要配置环境变量）
+    // MySQL连接配置 - 使用提供的连接信息
     const connection = await mysql.createConnection({
-      host: process.env.MYSQL_HOST || 'sh-cynosdbmysql-grp-n4olx0dy.sql.tencentcdb.com',
-      port: process.env.MYSQL_PORT || 21194,
-      user: process.env.MYSQL_USER || 'root',
-      password: process.env.MYSQL_PASSWORD,
-      database: process.env.MYSQL_DB || 'yizutt-2gyxyqzs7b4b88a2',
-      charset: 'utf8mb4'
+      host: 'sh-cynosdbmysql-grp-n4olx0dy.sql.tencentcdb.com',
+      port: 21194,
+      user: 'root',
+      password: 'yizutt-2gyxyqzs7b4b88a2',
+      database: 'yizutt-2gyxyqzs7b4b88a2',
+      charset: 'utf8mb4',
+      ssl: {
+        rejectUnauthorized: false // 腾讯云CynosDB需要SSL
+      },
+      connectTimeout: 10000,
+      acquireTimeout: 10000
     });
     
     let result;
@@ -29,7 +34,26 @@ exports.main = async (event, context) => {
     } else if (operation === 'execute') {
       // 执行操作（增删改）
       const [resultSet] = await connection.execute(sql, params);
-      result = resultSet;
+      result = {
+        affectedRows: resultSet.affectedRows,
+        insertId: resultSet.insertId,
+        changedRows: resultSet.changedRows
+      };
+    } else if (operation === 'transaction') {
+      // 事务操作
+      await connection.beginTransaction();
+      try {
+        const results = [];
+        for (const query of event.queries) {
+          const [rows] = await connection.execute(query.sql, query.params || []);
+          results.push(rows);
+        }
+        await connection.commit();
+        result = results;
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      }
     }
     
     await connection.end();
@@ -43,7 +67,8 @@ exports.main = async (event, context) => {
     console.error('数据库操作失败:', error);
     return {
       code: -1,
-      message: error.message || '数据库操作失败'
+      message: error.message || '数据库操作失败',
+      error: error.code
     };
   }
 };

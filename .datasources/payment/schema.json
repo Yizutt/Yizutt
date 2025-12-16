@@ -54,6 +54,11 @@
       "name": "description",
       "title": "描述",
       "type": "String"
+    },
+    {
+      "name": "period",
+      "title": "周期",
+      "type": "String"
     }
   ]
 }

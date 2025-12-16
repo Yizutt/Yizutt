@@ -40,9 +40,12 @@ export default function Home(props) {
               image: item.image_url,
               authorId: item.author_id,
               authorName: item.author_name,
+              authorAvatar: item.author_avatar,
               tags: item.tags ? item.tags.split(',') : [],
               likes: item.likes || 0,
               comments: item.comments || 0,
+              views: item.views || 0,
+              isPremium: item.is_premium || false,
               publishAt: new Date(item.created_at).getTime(),
               status: item.status
             }));
@@ -83,6 +86,10 @@ export default function Home(props) {
             description: '已切换到微搭数据源',
             variant: 'destructive'
           });
+          // 重新获取数据
+          setTimeout(() => {
+            fetchPosts();
+          }, 1000);
         } else {
           toast({
             title: '获取内容失败',
@@ -142,6 +149,7 @@ export default function Home(props) {
         description: '感谢您的支持！'
       });
     } catch (error) {
+      console.error('点赞失败:', error);
       toast({
         title: '点赞失败',
         description: '请稍后重试',
@@ -218,6 +226,7 @@ export default function Home(props) {
         });
       }
     } catch (error) {
+      console.error('权限检查失败:', error);
       toast({
         title: '权限检查失败',
         description: '请稍后重试',
@@ -237,6 +246,7 @@ export default function Home(props) {
         }
       });
     } catch (error) {
+      console.error('微信登录失败:', error);
       toast({
         title: '微信登录失败',
         description: '请稍后重试',

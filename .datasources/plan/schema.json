@@ -45,6 +45,16 @@
       "name": "sortOrder",
       "title": "排序",
       "type": "Number"
+    },
+    {
+      "name": "discount",
+      "title": "折扣",
+      "type": "Number"
+    },
+    {
+      "name": "originalPrice",
+      "title": "原价",
+      "type": "Number"
     }
   ]
 }

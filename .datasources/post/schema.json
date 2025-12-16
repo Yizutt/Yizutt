@@ -71,6 +71,16 @@
       "title": "发布时间",
       "type": "DateTime",
       "format": "timestamp-ms"
+    },
+    {
+      "name": "category",
+      "title": "分类",
+      "type": "String"
+    },
+    {
+      "name": "summary",
+      "title": "摘要",
+      "type": "String"
     }
   ]
 }

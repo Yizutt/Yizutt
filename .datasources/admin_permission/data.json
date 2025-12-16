@@ -9,11 +9,28 @@
     "isActive": true,
     "lastLoginAt": 1734288000000,
     "loginIp": "192.168.1.100",
+    "createdBy": "system",
     "createdAt": 1734288000000,
     "updatedAt": 1734288000000,
     "owner": "user_001",
     "createBy": "system",
     "updateBy": "user_001"
+  },
+  {
+    "_id": "admin_002",
+    "userId": "user_005",
+    "username": "photo_artist",
+    "role": "content_admin",
+    "permissions": ["content_manage", "content_review"],
+    "isActive": true,
+    "lastLoginAt": 1734115200000,
+    "loginIp": "192.168.1.101",
+    "createdBy": "user_001",
+    "createdAt": 1734115200000,
+    "updatedAt": 1734115200000,
+    "owner": "user_005",
+    "createBy": "user_001",
+    "updateBy": "user_005"
   }
 ]
   

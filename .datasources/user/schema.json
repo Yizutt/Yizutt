@@ -14,6 +14,11 @@
       "type": "Email"
     },
     {
+      "name": "password",
+      "title": "密码",
+      "type": "String"
+    },
+    {
       "name": "nickName",
       "title": "昵称",
       "type": "String"
@@ -54,6 +59,16 @@
       "name": "loginCount",
       "title": "登录次数",
       "type": "Number"
+    },
+    {
+      "name": "status",
+      "title": "账号状态",
+      "type": "String"
+    },
+    {
+      "name": "phone",
+      "title": "手机号",
+      "type": "String"
     }
   ]
 }

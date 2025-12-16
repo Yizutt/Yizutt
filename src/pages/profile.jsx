@@ -72,13 +72,18 @@ export default function Profile(props) {
               image: item.image_url,
               authorId: item.author_id,
               authorName: item.author_name,
+              authorAvatar: item.author_avatar,
               tags: item.tags ? item.tags.split(',') : [],
               likes: item.likes || 0,
               comments: item.comments || 0,
+              views: item.views || 0,
+              isPremium: item.is_premium || false,
               publishAt: new Date(item.created_at).getTime(),
               status: item.status
             }));
             setUserPosts(mysqlPosts);
+          } else {
+            throw new Error(postsResult.message);
           }
         } else {
           postsResult = await $w.cloud.callDataSource({
@@ -96,22 +101,31 @@ export default function Profile(props) {
           });
           if (postsResult && postsResult.records) {
             setUserPosts(postsResult.records);
+          } else {
+            throw new Error('获取内容失败');
           }
-        }
-        if (!postsResult || dataSource === 'mysql' && postsResult.code !== 0 || dataSource === 'weda' && !postsResult.records) {
-          toast({
-            title: '获取内容失败',
-            description: '暂无发布内容',
-            variant: 'destructive'
-          });
         }
       } catch (error) {
         console.error('获取用户数据失败:', error);
-        toast({
-          title: '网络错误',
-          description: '请检查网络连接后重试',
-          variant: 'destructive'
-        });
+        // 降级到微搭数据源
+        if (dataSource === 'mysql') {
+          setDataSource('weda');
+          toast({
+            title: 'MySQL连接失败',
+            description: '已切换到微搭数据源',
+            variant: 'destructive'
+          });
+          // 重新获取数据
+          setTimeout(() => {
+            fetchUserData();
+          }, 1000);
+        } else {
+          toast({
+            title: '网络错误',
+            description: '请检查网络连接后重试',
+            variant: 'destructive'
+          });
+        }
       } finally {
         setIsLoading(false);
       }
@@ -148,6 +162,7 @@ export default function Profile(props) {
         params: {}
       });
     } catch (error) {
+      console.error('退出失败:', error);
       toast({
         title: '退出失败',
         description: error.message || '请稍后重试',
@@ -174,6 +189,7 @@ export default function Profile(props) {
         description: '个人资料编辑功能开发中...'
       });
     } catch (error) {
+      console.error('更新失败:', error);
       toast({
         title: '更新失败',
         description: error.message || '请稍后重试',
@@ -193,6 +209,7 @@ export default function Profile(props) {
         }
       });
     } catch (error) {
+      console.error('绑定失败:', error);
       toast({
         title: '绑定失败',
         description: error.message || '请稍后重试',
@@ -233,6 +250,7 @@ export default function Profile(props) {
         throw new Error(result.message);
       }
     } catch (error) {
+      console.error('数据备份失败:', error);
       toast({
         title: '数据备份失败',
         description: error.message || '请稍后重试',
