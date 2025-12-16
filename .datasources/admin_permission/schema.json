@@ -1,0 +1,47 @@
+
+{
+  "name": "admin_permission",
+  "title": "管理员权限",
+  "schemas": [
+    {
+      "name": "userId",
+      "title": "用户ID",
+      "type": "String"
+    },
+    {
+      "name": "username",
+      "title": "用户名",
+      "type": "String"
+    },
+    {
+      "name": "role",
+      "title": "角色",
+      "type": "String"
+    },
+    {
+      "name": "permissions",
+      "title": "权限列表",
+      "type": "Array",
+      "items": {
+        "type": "String"
+      }
+    },
+    {
+      "name": "isActive",
+      "title": "是否激活",
+      "type": "Boolean"
+    },
+    {
+      "name": "lastLoginAt",
+      "title": "最后登录时间",
+      "type": "DateTime",
+      "format": "timestamp-ms"
+    },
+    {
+      "name": "loginIp",
+      "title": "登录IP",
+      "type": "String"
+    }
+  ]
+}
+  

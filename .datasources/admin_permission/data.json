@@ -1,0 +1,19 @@
+
+[
+  {
+    "_id": "admin_001",
+    "userId": "user_001",
+    "username": "admin",
+    "role": "super_admin",
+    "permissions": ["user_manage", "content_manage", "payment_manage", "system_manage"],
+    "isActive": true,
+    "lastLoginAt": 1734288000000,
+    "loginIp": "192.168.1.100",
+    "createdAt": 1734288000000,
+    "updatedAt": 1734288000000,
+    "owner": "user_001",
+    "createBy": "system",
+    "updateBy": "user_001"
+  }
+]
+  

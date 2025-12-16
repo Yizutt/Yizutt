@@ -1,0 +1,52 @@
+
+[
+  {
+    "_id": "plan_001",
+    "name": "基础会员",
+    "description": "适合普通用户的基础功能",
+    "price": 9.9,
+    "period": "月",
+    "features": ["无限内容发布", "基础图片上传", "社区互动"],
+    "isPopular": false,
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": 1734288000000,
+    "updatedAt": 1734288000000,
+    "owner": "system",
+    "createBy": "system",
+    "updateBy": "system"
+  },
+  {
+    "_id": "plan_002",
+    "name": "高级会员",
+    "description": "适合内容创作者的高级功能",
+    "price": 29.9,
+    "period": "月",
+    "features": ["所有基础功能", "高清图片上传", "专属模板", "优先审核"],
+    "isPopular": true,
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": 1734288000000,
+    "updatedAt": 1734288000000,
+    "owner": "system",
+    "createBy": "system",
+    "updateBy": "system"
+  },
+  {
+    "_id": "plan_003",
+    "name": "专业版",
+    "description": "适合专业用户的完整功能",
+    "price": 99.9,
+    "period": "年",
+    "features": ["所有高级功能", "无限存储空间", "专属客服", "数据分析"],
+    "isPopular": false,
+    "isActive": true,
+    "sortOrder": 3,
+    "createdAt": 1734288000000,
+    "updatedAt": 1734288000000,
+    "owner": "system",
+    "createBy": "system",
+    "updateBy": "system"
+  }
+]
+  

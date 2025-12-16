@@ -1,0 +1,60 @@
+
+{
+  "name": "payment",
+  "title": "支付记录",
+  "schemas": [
+    {
+      "name": "userId",
+      "title": "用户ID",
+      "type": "String"
+    },
+    {
+      "name": "planId",
+      "title": "套餐ID",
+      "type": "String"
+    },
+    {
+      "name": "planName",
+      "title": "套餐名称",
+      "type": "String"
+    },
+    {
+      "name": "amount",
+      "title": "支付金额",
+      "type": "Number"
+    },
+    {
+      "name": "paymentMethod",
+      "title": "支付方式",
+      "type": "String"
+    },
+    {
+      "name": "transactionId",
+      "title": "交易ID",
+      "type": "String"
+    },
+    {
+      "name": "status",
+      "title": "支付状态",
+      "type": "String"
+    },
+    {
+      "name": "paidAt",
+      "title": "支付时间",
+      "type": "DateTime",
+      "format": "timestamp-ms"
+    },
+    {
+      "name": "expireAt",
+      "title": "到期时间",
+      "type": "DateTime",
+      "format": "timestamp-ms"
+    },
+    {
+      "name": "description",
+      "title": "描述",
+      "type": "String"
+    }
+  ]
+}
+  

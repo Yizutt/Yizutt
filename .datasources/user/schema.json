@@ -1,0 +1,60 @@
+
+{
+  "name": "user",
+  "title": "用户信息",
+  "schemas": [
+    {
+      "name": "username",
+      "title": "用户名",
+      "type": "String"
+    },
+    {
+      "name": "email",
+      "title": "邮箱",
+      "type": "Email"
+    },
+    {
+      "name": "nickName",
+      "title": "昵称",
+      "type": "String"
+    },
+    {
+      "name": "avatarUrl",
+      "title": "头像URL",
+      "type": "Image"
+    },
+    {
+      "name": "wechatOpenId",
+      "title": "微信OpenID",
+      "type": "String"
+    },
+    {
+      "name": "isPremium",
+      "title": "是否会员",
+      "type": "Boolean"
+    },
+    {
+      "name": "premiumExpireAt",
+      "title": "会员到期时间",
+      "type": "DateTime",
+      "format": "timestamp-ms"
+    },
+    {
+      "name": "userType",
+      "title": "用户类型",
+      "type": "String"
+    },
+    {
+      "name": "lastLoginAt",
+      "title": "最后登录时间",
+      "type": "DateTime",
+      "format": "timestamp-ms"
+    },
+    {
+      "name": "loginCount",
+      "title": "登录次数",
+      "type": "Number"
+    }
+  ]
+}
+  

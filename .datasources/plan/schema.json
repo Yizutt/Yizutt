@@ -1,0 +1,51 @@
+
+{
+  "name": "plan",
+  "title": "会员套餐",
+  "schemas": [
+    {
+      "name": "name",
+      "title": "套餐名称",
+      "type": "String"
+    },
+    {
+      "name": "description",
+      "title": "套餐描述",
+      "type": "String"
+    },
+    {
+      "name": "price",
+      "title": "价格",
+      "type": "Number"
+    },
+    {
+      "name": "period",
+      "title": "周期",
+      "type": "String"
+    },
+    {
+      "name": "features",
+      "title": "功能列表",
+      "type": "Array",
+      "items": {
+        "type": "String"
+      }
+    },
+    {
+      "name": "isPopular",
+      "title": "是否热门",
+      "type": "Boolean"
+    },
+    {
+      "name": "isActive",
+      "title": "是否激活",
+      "type": "Boolean"
+    },
+    {
+      "name": "sortOrder",
+      "title": "排序",
+      "type": "Number"
+    }
+  ]
+}
+  

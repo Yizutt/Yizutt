@@ -1,0 +1,40 @@
+
+[
+  {
+    "_id": "payment_001",
+    "userId": "user_003",
+    "planId": "premium",
+    "planName": "高级会员",
+    "amount": 29.9,
+    "paymentMethod": "wechat",
+    "transactionId": "wx_202412160001",
+    "status": "success",
+    "paidAt": 1734288000000,
+    "expireAt": 1735660800000,
+    "description": "高级会员月费",
+    "createdAt": 1734288000000,
+    "updatedAt": 1734288000000,
+    "owner": "user_003",
+    "createBy": "user_003",
+    "updateBy": "system"
+  },
+  {
+    "_id": "payment_002",
+    "userId": "user_001",
+    "planId": "pro",
+    "planName": "专业版",
+    "amount": 99.9,
+    "paymentMethod": "wechat",
+    "transactionId": "wx_202412150001",
+    "status": "success",
+    "paidAt": 1734201600000,
+    "expireAt": 1765737600000,
+    "description": "专业版年费",
+    "createdAt": 1734201600000,
+    "updatedAt": 1734201600000,
+    "owner": "user_001",
+    "createBy": "user_001",
+    "updateBy": "system"
+  }
+]
+  

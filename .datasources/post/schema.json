@@ -1,0 +1,77 @@
+
+{
+  "name": "post",
+  "title": "图文内容",
+  "schemas": [
+    {
+      "name": "title",
+      "title": "标题",
+      "type": "String"
+    },
+    {
+      "name": "content",
+      "title": "内容",
+      "type": "MultiLineString"
+    },
+    {
+      "name": "image",
+      "title": "封面图片",
+      "type": "Image"
+    },
+    {
+      "name": "authorId",
+      "title": "作者ID",
+      "type": "String"
+    },
+    {
+      "name": "authorName",
+      "title": "作者名称",
+      "type": "String"
+    },
+    {
+      "name": "authorAvatar",
+      "title": "作者头像",
+      "type": "Image"
+    },
+    {
+      "name": "tags",
+      "title": "标签",
+      "type": "Array",
+      "items": {
+        "type": "String"
+      }
+    },
+    {
+      "name": "likes",
+      "title": "点赞数",
+      "type": "Number"
+    },
+    {
+      "name": "comments",
+      "title": "评论数",
+      "type": "Number"
+    },
+    {
+      "name": "views",
+      "title": "浏览数",
+      "type": "Number"
+    },
+    {
+      "name": "isPremium",
+      "title": "是否会员专属",
+      "type": "Boolean"
+    },
+    {
+      "name": "status",
+      "title": "状态",
+      "type": "String"
+    },
+    {
+      "name": "publishAt",
+      "title": "发布时间",
+      "type": "DateTime",
+      "format": "timestamp-ms"
+    }
+  ]
+}
+  

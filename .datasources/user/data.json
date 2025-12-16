@@ -1,0 +1,58 @@
+
+[
+  {
+    "_id": "user_001",
+    "username": "admin",
+    "email": "admin@example.com",
+    "nickName": "系统管理员",
+    "avatarUrl": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
+    "wechatOpenId": null,
+    "isPremium": true,
+    "premiumExpireAt": 1735660800000,
+    "userType": "admin",
+    "lastLoginAt": 1734288000000,
+    "loginCount": 156,
+    "createdAt": 1734288000000,
+    "updatedAt": 1734288000000,
+    "owner": "user_001",
+    "createBy": "system",
+    "updateBy": "user_001"
+  },
+  {
+    "_id": "user_002",
+    "username": "natural_explorer",
+    "email": "explorer@example.com",
+    "nickName": "自然探索者",
+    "avatarUrl": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
+    "wechatOpenId": "wx_openid_001",
+    "isPremium": false,
+    "premiumExpireAt": null,
+    "userType": "normal",
+    "lastLoginAt": 1734288000000,
+    "loginCount": 42,
+    "createdAt": 1734288000000,
+    "updatedAt": 1734288000000,
+    "owner": "user_002",
+    "createBy": "user_002",
+    "updateBy": "user_002"
+  },
+  {
+    "_id": "user_003",
+    "username": "night_master",
+    "email": "night@example.com",
+    "nickName": "夜景大师",
+    "avatarUrl": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
+    "wechatOpenId": "wx_openid_002",
+    "isPremium": true,
+    "premiumExpireAt": 1735660800000,
+    "userType": "normal",
+    "lastLoginAt": 1734288000000,
+    "loginCount": 89,
+    "createdAt": 1734288000000,
+    "updatedAt": 1734288000000,
+    "owner": "user_003",
+    "createBy": "user_003",
+    "updateBy": "user_003"
+  }
+]
+  
