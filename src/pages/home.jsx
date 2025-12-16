@@ -37,21 +37,21 @@ export default function Home(props) {
               _id: item.id,
               title: item.title,
               content: item.content,
-              image: item.image_url,
-              authorId: item.author_id,
-              authorName: item.author_name,
-              authorAvatar: item.author_avatar,
-              tags: item.tags ? item.tags.split(',') : [],
+              image: item.image,
+              authorId: item.authorId,
+              authorName: item.authorName,
+              authorAvatar: item.authorAvatar,
+              tags: item.tags ? typeof item.tags === 'string' ? item.tags.split(',') : item.tags : [],
               likes: item.likes || 0,
               comments: item.comments || 0,
               views: item.views || 0,
-              isPremium: item.is_premium || false,
-              publishAt: new Date(item.created_at).getTime(),
+              isPremium: item.isPremium || false,
+              publishAt: item.publishAt || item.createdAt || Date.now(),
               status: item.status
             }));
             setPosts(mysqlPosts);
           } else {
-            throw new Error(result.message);
+            throw new Error(result.message || 'MySQL查询失败');
           }
         } else {
           // 从微搭数据源获取数据
@@ -93,7 +93,7 @@ export default function Home(props) {
         } else {
           toast({
             title: '获取内容失败',
-            description: '请检查网络连接后重试',
+            description: error.message || '请检查网络连接后重试',
             variant: 'destructive'
           });
         }
@@ -119,7 +119,7 @@ export default function Home(props) {
     try {
       if (dataSource === 'mysql') {
         // MySQL点赞
-        await $w.cloud.callFunction({
+        const result = await $w.cloud.callFunction({
           name: 'mysql-query',
           data: {
             sql: 'UPDATE posts SET likes = likes + 1 WHERE id = ?',
@@ -127,6 +127,9 @@ export default function Home(props) {
             operation: 'execute'
           }
         });
+        if (result.code !== 0) {
+          throw new Error(result.message);
+        }
       } else {
         // 微搭数据源点赞
         await $w.cloud.callDataSource({
@@ -152,7 +155,7 @@ export default function Home(props) {
       console.error('点赞失败:', error);
       toast({
         title: '点赞失败',
-        description: '请稍后重试',
+        description: error.message || '请稍后重试',
         variant: 'destructive'
       });
     }
@@ -387,7 +390,7 @@ export default function Home(props) {
                 <CardContent className="p-0 overflow-hidden rounded-lg">
                   {/* 图片区域 */}
                   <div className="relative">
-                    <img src={post.image} alt={post.title} className="w-full h-48 object-cover transition-transform duration-300 hover:scale-105" />
+                    <img src={post.image || 'https://picsum.photos/seed/' + post._id + '/400/300.jpg'} alt={post.title} className="w-full h-48 object-cover transition-transform duration-300 hover:scale-105" />
                     <div className="absolute top-3 left-3">
                       <Badge variant="secondary" className="bg-white/90 text-slate-700">
                         {post.tags?.[0] || '默认'}
