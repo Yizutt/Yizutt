@@ -54,7 +54,7 @@ export default function Home(props) {
             throw new Error(result.message || 'MySQL查询失败');
           }
         } else {
-          // 从微搭数据源获取数据 - 修复orderBy参数格式
+          // 从微搭数据源获取数据 - 修复orderBy参数为JSON数组格式
           result = await $w.cloud.callDataSource({
             dataSourceName: 'post',
             methodName: 'wedaGetRecordsV2',
@@ -64,7 +64,10 @@ export default function Home(props) {
               filter: {
                 status: 'published'
               },
-              orderBy: 'publishAt desc' // 修复：使用字符串格式而不是对象格式
+              orderBy: [{
+                field: 'publishAt',
+                order: 'desc'
+              }] // 修复：使用JSON数组格式
             }
           });
           if (result && result.records) {
