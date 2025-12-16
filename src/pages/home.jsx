@@ -3,10 +3,8 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button, Card, CardContent, CardHeader, CardTitle, Avatar, AvatarFallback, AvatarImage, Badge, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Heart, MessageSquare, Share, Calendar, User, Settings, Crown, Wechat, Shield } from 'lucide-react';
+import { Heart, MessageSquare, Share, Calendar, User, Settings, Crown, Wechat, Shield, Database } from 'lucide-react';
 
-// @ts-ignore;
-import { generateSignature } from '@/lib/security';
 export default function Home(props) {
   const {
     $w
@@ -16,53 +14,88 @@ export default function Home(props) {
   } = useToast();
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [dataSource, setDataSource] = useState('weda'); // weda 或 mysql
 
   // 获取真实数据
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        // 生成安全签名
-        const timestamp = Date.now();
-        const signature = generateSignature('GET', '/api/posts', {}, timestamp);
-        const result = await $w.cloud.callDataSource({
-          dataSourceName: 'post',
-          methodName: 'wedaGetRecordsV2',
-          params: {
-            pageSize: 10,
-            pageNo: 1,
-            filter: {
-              status: 'published'
-            },
-            orderBy: [{
-              field: 'publishAt',
-              order: 'desc'
-            }],
-            timestamp: timestamp,
-            signature: signature
-          }
-        });
-        if (result && result.records) {
-          setPosts(result.records);
-        } else {
-          toast({
-            title: '获取内容失败',
-            description: '暂无内容数据',
-            variant: 'destructive'
+        let result;
+        if (dataSource === 'mysql') {
+          // 从MySQL获取数据
+          result = await $w.cloud.callFunction({
+            name: 'mysql-query',
+            data: {
+              sql: 'SELECT * FROM posts WHERE status = ? ORDER BY created_at DESC LIMIT 10',
+              params: ['published'],
+              operation: 'query'
+            }
           });
+          if (result.code === 0) {
+            // 转换MySQL数据格式
+            const mysqlPosts = result.data.map(item => ({
+              _id: item.id,
+              title: item.title,
+              content: item.content,
+              image: item.image_url,
+              authorId: item.author_id,
+              authorName: item.author_name,
+              tags: item.tags ? item.tags.split(',') : [],
+              likes: item.likes || 0,
+              comments: item.comments || 0,
+              publishAt: new Date(item.created_at).getTime(),
+              status: item.status
+            }));
+            setPosts(mysqlPosts);
+          } else {
+            throw new Error(result.message);
+          }
+        } else {
+          // 从微搭数据源获取数据
+          result = await $w.cloud.callDataSource({
+            dataSourceName: 'post',
+            methodName: 'wedaGetRecordsV2',
+            params: {
+              pageSize: 10,
+              pageNo: 1,
+              filter: {
+                status: 'published'
+              },
+              orderBy: [{
+                field: 'publishAt',
+                order: 'desc'
+              }]
+            }
+          });
+          if (result && result.records) {
+            setPosts(result.records);
+          } else {
+            throw new Error('获取内容失败');
+          }
         }
       } catch (error) {
         console.error('获取内容失败:', error);
-        toast({
-          title: '网络错误',
-          description: '请检查网络连接后重试',
-          variant: 'destructive'
-        });
+        // 降级到微搭数据源
+        if (dataSource === 'mysql') {
+          setDataSource('weda');
+          toast({
+            title: 'MySQL连接失败',
+            description: '已切换到微搭数据源',
+            variant: 'destructive'
+          });
+        } else {
+          toast({
+            title: '获取内容失败',
+            description: '请检查网络连接后重试',
+            variant: 'destructive'
+          });
+        }
       } finally {
         setIsLoading(false);
       }
     };
     fetchPosts();
-  }, []);
+  }, [dataSource]);
   const handleLike = async postId => {
     if (!$w.auth.currentUser?.userId) {
       toast({
@@ -77,25 +110,29 @@ export default function Home(props) {
       return;
     }
     try {
-      // 生成安全签名
-      const timestamp = Date.now();
-      const signature = generateSignature('POST', '/api/like', {
-        postId
-      }, timestamp);
-
-      // 更新点赞数
-      await $w.cloud.callDataSource({
-        dataSourceName: 'post',
-        methodName: 'wedaUpdateV2',
-        params: {
-          _id: postId,
-          likes: {
-            $inc: 1
-          },
-          timestamp: timestamp,
-          signature: signature
-        }
-      });
+      if (dataSource === 'mysql') {
+        // MySQL点赞
+        await $w.cloud.callFunction({
+          name: 'mysql-query',
+          data: {
+            sql: 'UPDATE posts SET likes = likes + 1 WHERE id = ?',
+            params: [postId],
+            operation: 'execute'
+          }
+        });
+      } else {
+        // 微搭数据源点赞
+        await $w.cloud.callDataSource({
+          dataSourceName: 'post',
+          methodName: 'wedaUpdateV2',
+          params: {
+            _id: postId,
+            likes: {
+              $inc: 1
+            }
+          }
+        });
+      }
       setPosts(posts.map(post => post._id === postId ? {
         ...post,
         likes: (post.likes || 0) + 1
@@ -157,12 +194,6 @@ export default function Home(props) {
       return;
     }
     try {
-      // 生成安全签名
-      const timestamp = Date.now();
-      const signature = generateSignature('GET', '/api/admin/check', {
-        userId: $w.auth.currentUser.userId
-      }, timestamp);
-
       // 检查管理员权限
       const result = await $w.cloud.callDataSource({
         dataSourceName: 'admin_permission',
@@ -171,9 +202,7 @@ export default function Home(props) {
           filter: {
             userId: $w.auth.currentUser.userId,
             isActive: true
-          },
-          timestamp: timestamp,
-          signature: signature
+          }
         }
       });
       if (result && result.records && result.records.length > 0) {
@@ -198,18 +227,13 @@ export default function Home(props) {
   };
   const handleWechatLogin = async () => {
     try {
-      // 生成安全签名
-      const timestamp = Date.now();
-      const signature = generateSignature('GET', '/auth/wechat', {}, timestamp);
       const tcb = await $w.cloud.getCloudInstance();
       tcb.auth().toDefaultLoginPage({
         config_version: "env",
         redirect_uri: window.location.href,
         query: {
           s_domain: $w.utils.resolveStaticResourceUrl("/").replace(/^https?:\/\//, "").split("/")[0],
-          provider: "wechat",
-          timestamp: timestamp,
-          signature: signature
+          provider: "wechat"
         }
       });
     } catch (error) {
@@ -238,6 +262,15 @@ export default function Home(props) {
       params: {}
     });
   };
+  const toggleDataSource = () => {
+    const newDataSource = dataSource === 'mysql' ? 'weda' : 'mysql';
+    setDataSource(newDataSource);
+    setIsLoading(true);
+    toast({
+      title: `切换到${newDataSource === 'mysql' ? 'MySQL' : '微搭'}数据源`,
+      description: '正在重新加载数据...'
+    });
+  };
   const isLoggedIn = Boolean($w.auth.currentUser?.userId);
   const isPremium = $w.auth.currentUser?.name?.includes('premium') || false;
   return <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -249,11 +282,11 @@ export default function Home(props) {
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg"></div>
               <h1 className="text-2xl font-bold text-slate-800 font-playfair">图文发布</h1>
               
-              {/* 安全标识 */}
-              <div className="flex items-center text-xs text-green-600 ml-2">
-                <Shield className="w-3 h-3 mr-1" />
-                <span>安全</span>
-              </div>
+              {/* 数据源切换 */}
+              <Button variant="outline" size="sm" onClick={toggleDataSource} className="ml-4 flex items-center space-x-1">
+                <Database className="w-3 h-3" />
+                <span>{dataSource === 'mysql' ? 'MySQL' : '微搭'}</span>
+              </Button>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -304,6 +337,16 @@ export default function Home(props) {
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
             分享你的故事，探索他人的世界。在这里，每一张图片都承载着独特的情感与记忆。
           </p>
+          
+          {/* 数据源状态 */}
+          <div className="flex items-center justify-center mt-4 space-x-2">
+            <Badge variant="secondary" className={dataSource === 'mysql' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
+              <Database className="w-3 h-3 mr-1" />
+              数据源: {dataSource === 'mysql' ? 'MySQL' : '微搭'}
+            </Badge>
+            <Shield className="w-4 h-4 text-green-500" />
+            <span className="text-sm text-slate-500">云托管保障</span>
+          </div>
           
           {/* 微信登录提示 */}
           {!isLoggedIn && <div className="mt-6 flex justify-center space-x-4">

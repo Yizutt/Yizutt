@@ -13,13 +13,15 @@ export default function Publish(props) {
     toast
   } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // 表单状态
   const [formData, setFormData] = useState({
     title: '',
     content: '',
     tags: [],
-    image: ''
+    image: '',
+    imageFile: null
   });
   const [currentTag, setCurrentTag] = useState('');
 
@@ -60,18 +62,67 @@ export default function Publish(props) {
       tags: formData.tags.filter(tag => tag !== tagToRemove)
     });
   };
-  const handleImageUpload = e => {
+  const handleImageUpload = async e => {
     const file = e.target.files[0];
     if (file) {
-      // 这里应该实现真实的图片上传到云存储
-      const reader = new FileReader();
-      reader.onload = event => {
-        setFormData({
-          ...formData,
-          image: event.target.result
+      // 检查文件大小（限制5MB）
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: '文件过大',
+          description: '图片大小不能超过5MB',
+          variant: 'destructive'
         });
-      };
-      reader.readAsDataURL(file);
+        return;
+      }
+      setUploadingImage(true);
+      try {
+        // 读取文件为base64
+        const reader = new FileReader();
+        reader.onload = async event => {
+          try {
+            // 调用云函数上传到云储存
+            const uploadResult = await $w.cloud.callFunction({
+              name: 'upload-file',
+              data: {
+                fileData: event.target.result.split(',')[1],
+                // 去除data:image前缀
+                fileName: file.name,
+                fileType: file.type
+              }
+            });
+            if (uploadResult.code === 0) {
+              setFormData({
+                ...formData,
+                image: uploadResult.data.fileUrl,
+                imageFile: file
+              });
+              toast({
+                title: '图片上传成功',
+                description: '图片已保存到云储存'
+              });
+            } else {
+              throw new Error(uploadResult.message);
+            }
+          } catch (error) {
+            console.error('图片上传失败:', error);
+            toast({
+              title: '图片上传失败',
+              description: error.message || '请稍后重试',
+              variant: 'destructive'
+            });
+          } finally {
+            setUploadingImage(false);
+          }
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        setUploadingImage(false);
+        toast({
+          title: '图片处理失败',
+          description: error.message || '请检查图片格式',
+          variant: 'destructive'
+        });
+      }
     }
   };
   const handleSubmit = async e => {
@@ -86,8 +137,8 @@ export default function Publish(props) {
     }
     setIsLoading(true);
     try {
-      // 创建文章记录
-      const result = await $w.cloud.callDataSource({
+      // 创建文章记录到微搭数据源
+      const postResult = await $w.cloud.callDataSource({
         dataSourceName: 'post',
         methodName: 'wedaCreateV2',
         params: {
@@ -103,16 +154,36 @@ export default function Publish(props) {
           views: 0,
           isPremium: false,
           status: 'pending',
-          // 待审核状态
           publishAt: new Date().getTime()
         }
       });
-      if (result) {
-        toast({
-          title: '发布成功',
-          description: '您的内容已提交审核，审核通过后即可展示！'
+      if (postResult) {
+        // 同步到MySQL数据库
+        const syncResult = await $w.cloud.callFunction({
+          name: 'sync-data',
+          data: {
+            action: 'syncToMySQL',
+            tableName: 'posts',
+            data: [{
+              title: formData.title,
+              content: formData.content,
+              image_url: formData.image,
+              author_id: $w.auth.currentUser.userId,
+              tags: formData.tags.join(','),
+              status: 'pending',
+              created_at: new Date().toISOString()
+            }]
+          }
         });
-        $w.utils.navigateBack();
+        if (syncResult.code === 0) {
+          toast({
+            title: '发布成功',
+            description: '您的内容已提交审核，并同步到数据库！'
+          });
+          $w.utils.navigateBack();
+        } else {
+          throw new Error('数据同步失败');
+        }
       } else {
         throw new Error('发布失败');
       }
@@ -137,7 +208,7 @@ export default function Publish(props) {
             <CardTitle className="text-2xl font-bold text-slate-800 font-playfair">
               发布新内容
             </CardTitle>
-            <p className="text-slate-600">分享你的故事和图片</p>
+            <p className="text-slate-600">分享你的故事和图片（支持云储存上传）</p>
           </CardHeader>
           
           <CardContent className="space-y-6">
@@ -164,11 +235,15 @@ export default function Publish(props) {
               <div className="space-y-2">
                 <Label className="text-slate-700 text-lg">封面图片</Label>
                 <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                  {formData.image ? <div className="relative">
+                  {uploadingImage ? <div className="flex flex-col items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+                      <p className="text-slate-600">图片上传中...</p>
+                    </div> : formData.image ? <div className="relative">
                       <img src={formData.image} alt="预览" className="max-h-64 mx-auto rounded-lg shadow-md" />
                       <button type="button" onClick={() => setFormData({
                     ...formData,
-                    image: ''
+                    image: '',
+                    imageFile: null
                   })} className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600">
                         <X className="w-4 h-4" />
                       </button>
@@ -212,10 +287,10 @@ export default function Publish(props) {
                 <Button type="button" variant="outline" onClick={() => $w.utils.navigateBack()} className="flex-1">
                   取消
                 </Button>
-                <Button type="submit" className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700" disabled={isLoading}>
-                  {isLoading ? <>
+                <Button type="submit" className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700" disabled={isLoading || uploadingImage}>
+                  {isLoading || uploadingImage ? <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      发布中...
+                      {uploadingImage ? '上传中...' : '发布中...'}
                     </> : <>
                       <Save className="w-4 h-4 mr-2" />
                       立即发布

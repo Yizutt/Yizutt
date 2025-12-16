@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button, Card, CardContent, CardHeader, CardTitle, Avatar, AvatarFallback, AvatarImage, Badge, useToast } from '@/components/ui';
 // @ts-ignore;
-import { User, Settings, LogOut, Edit, Heart, MessageSquare, Calendar, Crown, Wechat, CreditCard, CheckCircle, XCircle } from 'lucide-react';
+import { User, Settings, LogOut, Edit, Heart, MessageSquare, Calendar, Crown, Wechat, CreditCard, CheckCircle, XCircle, Database } from 'lucide-react';
 
 export default function Profile(props) {
   const {
@@ -17,6 +17,7 @@ export default function Profile(props) {
   const [activeTab, setActiveTab] = useState('posts');
   const [isWechatBound, setIsWechatBound] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
+  const [dataSource, setDataSource] = useState('weda');
 
   // 检查登录状态
   React.useEffect(() => {
@@ -53,22 +54,51 @@ export default function Profile(props) {
         }
 
         // 获取用户发布的文章
-        const postsResult = await $w.cloud.callDataSource({
-          dataSourceName: 'post',
-          methodName: 'wedaGetRecordsV2',
-          params: {
-            filter: {
-              authorId: $w.auth.currentUser.userId
-            },
-            orderBy: [{
-              field: 'publishAt',
-              order: 'desc'
-            }]
+        let postsResult;
+        if (dataSource === 'mysql') {
+          postsResult = await $w.cloud.callFunction({
+            name: 'mysql-query',
+            data: {
+              sql: 'SELECT * FROM posts WHERE author_id = ? ORDER BY created_at DESC LIMIT 10',
+              params: [$w.auth.currentUser.userId],
+              operation: 'query'
+            }
+          });
+          if (postsResult.code === 0) {
+            const mysqlPosts = postsResult.data.map(item => ({
+              _id: item.id,
+              title: item.title,
+              content: item.content,
+              image: item.image_url,
+              authorId: item.author_id,
+              authorName: item.author_name,
+              tags: item.tags ? item.tags.split(',') : [],
+              likes: item.likes || 0,
+              comments: item.comments || 0,
+              publishAt: new Date(item.created_at).getTime(),
+              status: item.status
+            }));
+            setUserPosts(mysqlPosts);
           }
-        });
-        if (postsResult && postsResult.records) {
-          setUserPosts(postsResult.records);
         } else {
+          postsResult = await $w.cloud.callDataSource({
+            dataSourceName: 'post',
+            methodName: 'wedaGetRecordsV2',
+            params: {
+              filter: {
+                authorId: $w.auth.currentUser.userId
+              },
+              orderBy: [{
+                field: 'publishAt',
+                order: 'desc'
+              }]
+            }
+          });
+          if (postsResult && postsResult.records) {
+            setUserPosts(postsResult.records);
+          }
+        }
+        if (!postsResult || dataSource === 'mysql' && postsResult.code !== 0 || dataSource === 'weda' && !postsResult.records) {
           toast({
             title: '获取内容失败',
             description: '暂无发布内容',
@@ -92,7 +122,7 @@ export default function Profile(props) {
     if ($w.auth.currentUser?.userId) {
       setIsWechatBound(!!$w.auth.currentUser?.avatarUrl?.includes('wx.qlogo.cn'));
     }
-  }, [$w.auth.currentUser?.userId]);
+  }, [$w.auth.currentUser?.userId, dataSource]);
   if (!$w.auth.currentUser?.userId) {
     return <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -175,6 +205,40 @@ export default function Profile(props) {
       pageId: 'payment',
       params: {}
     });
+  };
+  const toggleDataSource = () => {
+    const newDataSource = dataSource === 'mysql' ? 'weda' : 'mysql';
+    setDataSource(newDataSource);
+    setIsLoading(true);
+    toast({
+      title: `切换到${newDataSource === 'mysql' ? 'MySQL' : '微搭'}数据源`,
+      description: '正在重新加载数据...'
+    });
+  };
+  const handleDataBackup = async () => {
+    try {
+      const result = await $w.cloud.callFunction({
+        name: 'sync-data',
+        data: {
+          action: 'backup',
+          tableName: 'user_posts'
+        }
+      });
+      if (result.code === 0) {
+        toast({
+          title: '数据备份成功',
+          description: '用户数据已备份到云储存'
+        });
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error) {
+      toast({
+        title: '数据备份失败',
+        description: error.message || '请稍后重试',
+        variant: 'destructive'
+      });
+    }
   };
   const user = $w.auth.currentUser;
   const isAdmin = user?.name === 'admin' || user?.type === 'admin';
@@ -261,6 +325,20 @@ export default function Profile(props) {
 
       {/* 内容区域 */}
       <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* 数据源控制 */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-4">
+            <Button variant="outline" size="sm" onClick={toggleDataSource} className="flex items-center space-x-1">
+              <Database className="w-3 h-3" />
+              <span>{dataSource === 'mysql' ? 'MySQL' : '微搭'}数据源</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDataBackup} className="flex items-center space-x-1">
+              <Database className="w-3 h-3" />
+              <span>数据备份</span>
+            </Button>
+          </div>
+        </div>
+
         {/* 选项卡 */}
         <div className="flex space-x-1 bg-slate-100 rounded-lg p-1 mb-6">
           <button onClick={() => setActiveTab('posts')} className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${activeTab === 'posts' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}>
@@ -270,7 +348,7 @@ export default function Profile(props) {
             会员中心
           </button>
           <button onClick={() => setActiveTab('settings')} className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${activeTab === 'settings' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}>
-            设置
+            云服务设置
           </button>
         </div>
 
@@ -417,14 +495,54 @@ export default function Profile(props) {
             </div>
           </div>}
 
-        {/* 设置选项卡内容 */}
-        {activeTab === 'settings' && <Card className="border-0 bg-white/60">
-            <CardContent className="p-8 text-center">
-              <Settings className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-slate-600 mb-2">功能开发中</h3>
-              <p className="text-slate-500">该功能正在紧张开发中，敬请期待！</p>
-            </CardContent>
-          </Card>}
+        {/* 云服务设置 */}
+        {activeTab === 'settings' && <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-slate-800">云服务设置</h2>
+            
+            <Card className="border-0 bg-white/60">
+              <CardContent className="p-6">
+                <h4 className="font-semibold text-slate-800 mb-4">数据源配置</h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600">当前数据源</span>
+                    <Badge variant="secondary" className={dataSource === 'mysql' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
+                      {dataSource === 'mysql' ? 'MySQL' : '微搭数据源'}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600">云储存状态</span>
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      已启用
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600">云托管状态</span>
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      运行中
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 bg-white/60">
+              <CardContent className="p-6">
+                <h4 className="font-semibold text-slate-800 mb-4">数据管理</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button onClick={handleDataBackup} variant="outline" className="justify-start">
+                    <Database className="w-4 h-4 mr-2" />
+                    数据备份
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <Database className="w-4 h-4 mr-2" />
+                    数据恢复
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>}
       </div>
     </div>;
 }
